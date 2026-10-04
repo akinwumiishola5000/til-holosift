@@ -136,7 +136,7 @@ a{color:var(--link)}
 .kv dt{color:var(--ink-3)}
 .kv dd{margin:0;font-weight:600;color:var(--ink);word-break:break-word}
 .res-big{display:flex;align-items:baseline;gap:8px;padding:12px 14px;border-radius:10px;background:#EAF3EC;margin-bottom:14px}
-.res-big b{font-family:var(--display);font-size:32px;font-weight:800;color:var(--green-d);letter-spacing:-.02em}
+.res-big b{white-space:nowrap;flex:none;font-family:var(--display);font-size:32px;font-weight:800;color:var(--green-d);letter-spacing:-.02em}
 .res-big span{color:var(--ink-2);font-size:14px}
 .res-big.mid{background:#EEF7FA}.res-big.mid b{color:#167E99}
 .res-big.low{background:#FBF3EA}.res-big.low b{color:var(--warn)}
@@ -368,7 +368,7 @@ table.mt input{accent-color:var(--green);width:16px;height:16px}
               <option value="bfactor">B-factor</option>
               <option value="hydro">Hydrophobicity</option>
             </select>
-            <button class="vbtn" id="sSurf" aria-pressed="false" title="Molecular surface"><span class="ms">blur_on</span>Surface</button>
+            <button class="vbtn" id="sSurf" aria-pressed="false" title="Show the molecular surface"><span class="ms">blur_on</span>Surface</button>
             <button class="vbtn" id="sPocket" aria-pressed="true" title="Residues within 5 Å of the selected ligands"><span class="ms">radar</span>Binding site</button>
             <button class="vbtn" id="sGhost" aria-pressed="false" title="Show unselected parts faintly"><span class="ms">visibility</span>Unselected</button>
             <span class="sp"></span>
@@ -837,7 +837,7 @@ function ensureViewer(){
 function setStructure(st){
   S.st=st;S.sel=defaultSelection(st);S.focus=null;S.seqChain=st.chains.keys().next().value||null;
   const v=ensureViewer();
-  v.clear();S.surfId=null;S.surf=false;$("sSurf").setAttribute("aria-pressed","false");
+  v.clear();clearSurface();S.surf=false;$("sSurf").setAttribute("aria-pressed","false");
   const m=v.addModel(displayPDB(st),"pdb",{keepH:true});
   S.model=m;
   const n=m.selectedAtoms({}).length;
@@ -912,13 +912,26 @@ function applyStyles(){
   v.render();
   const ex=exportAtoms();$("sStatus").textContent=`${fmtNum(ex.length)} atoms selected for export`;
 }
+function clearSurface(){
+  // 3Dmol 2.x builds surfaces asynchronously and addSurface returns a Promise, so track a
+  // generation number and remove every surface rather than relying on a stored ID.
+  const v=S.viewer;S.surfGen=(S.surfGen||0)+1;S.surfId=null;
+  if(v)v.removeAllSurfaces();
+}
 function updateSurface(){
-  const v=S.viewer;if(S.surfId!=null){v.removeSurface(S.surfId);S.surfId=null}
-  if(!S.surf)return;
+  const v=S.viewer;if(!v)return;
+  clearSurface();
+  if(!S.surf){v.render();return}
   const idx=[];for(const c of S.st.chains.values())if(S.sel.chains.has(c.id))idx.push(...idxOf(c.residues));
-  if(!idx.length)return;
+  if(!idx.length){v.render();return}
   if(idx.length>40000){toast("The surface is limited to 40,000 atoms. Select fewer chains to show it.",true);S.surf=false;$("sSurf").setAttribute("aria-pressed","false");return}
-  S.surfId=v.addSurface($3Dmol.SurfaceType.SAS,{opacity:0.72,colorfunc:a=>S.color==="chain"?chainColor(S.st,a.chain):"#DCE6F0"},{index:idx});
+  const gen=S.surfGen;
+  const done=id=>{
+    if(gen!==S.surfGen||!S.surf){try{v.removeSurface(id)}catch(e){}v.render();return}
+    S.surfId=id;v.render();
+  };
+  const p=v.addSurface($3Dmol.SurfaceType.SAS,{opacity:0.72,colorfunc:a=>S.color==="chain"?chainColor(S.st,a.chain):"#DCE6F0"},{index:idx});
+  if(p&&typeof p.then==="function")p.then(done,()=>{});else done(p);
 }
 function focusResidue(r,fromViewer){
   S.focus=r;applyStyles();
@@ -1678,7 +1691,7 @@ document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",
 $("sRep").addEventListener("change",e=>{S.rep=e.target.value;applyStyles()});
 $("sColor").addEventListener("change",e=>{S.color=e.target.value;applyStyles()});
 const toggle=(id,key,obj,fn)=>$(id).addEventListener("click",()=>{obj[key]=!obj[key];$(id).setAttribute("aria-pressed",String(obj[key]));fn()});
-toggle("sSurf","surf",S,()=>{updateSurface();S.viewer.render()});
+toggle("sSurf","surf",S,()=>{updateSurface();$("sSurf").title=S.surf?"Hide the molecular surface":"Show the molecular surface"});
 toggle("sPocket","pocket",S,()=>{applyStyles();renderSequence()});
 toggle("sGhost","ghost",S,applyStyles);
 toggle("sSpin","spin",S,()=>S.viewer.spin(S.spin?"y":false,0.8));
