@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "HoloSift is a browser-based tool from The Insilico Lab for preparing and inspecting protein-ligand structures. It fetches entries from the RCSB Protein Data Bank or opens local PDB, mmCIF, PQR and PDBQT files, reports experimental metadata, and lets users select chains, ligands, ions, buffer molecules and waters to keep before downloading a cleaned complex, the protein alone, or the ligands alone. It also shows chain sequences with unmodelled gaps and binding-site residues, and opens multi-molecule SDF, MOL2, PDBQT and related files such as docking poses. All processing runs in the user's browser.",
   "creators": [
-    {"name": "Akinwumi, Ishola Abeeb", "affiliation": "University at Buffalo; The Insilico Lab", "orcid": "0000-0003-1973-8833"}
+    {"name": "Akinwumi, Ishola Abeeb", "affiliation": "The Insilico Lab; University at Buffalo", "orcid": "0000-0003-1973-8833"}
   ],
   "keywords": ["structural bioinformatics", "Protein Data Bank", "protein preparation", "docking", "3Dmol.js", "CADD education"],
   "license": "mit",
