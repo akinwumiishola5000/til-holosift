@@ -1,4 +1,5 @@
 # HoloSift
+[![DOI](https://zenodo.org/badge/1403691959.svg)](https://doi.org/10.5281/zenodo.23351944)
 
 A structure and ligand explorer for members of The Insilico Lab, part of the CADD Toolkit at https://www.theinsilicolab.org/cadd-toolkit.
 
